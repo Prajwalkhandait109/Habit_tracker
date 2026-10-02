@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 0.75rem;
+  --background: 220 20% 6%;
+  --foreground: 210 20% 98%;
+  --card: 220 17% 10%;
+  --card-foreground: 210 20% 98%;
+  --popover: 220 17% 10%;
+  --popover-foreground: 210 20% 98%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 220 17% 16%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 220 17% 16%;
+  --muted-foreground: 215 16% 57%;
+  --accent: 199 89% 48%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 220 17% 18%;
+  --input: 220 17% 18%;
+  --ring: 199 89% 48%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    background: linear-gradient(135deg, #0a0f1a 0%, #0d1525 50%, #0a0f1a 100%);
+    min-height: 100vh;
+  }
+  
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400;
+  }
+  
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glow {
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.3);
+  }
+  
+  .glow-subtle {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+  }
+  
+  .check-animation {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .check-animation:hover {
+    transform: scale(1.1);
+  }
+  
+  .check-animation:checked {
+    transform: scale(1.05);
+  }
+  
+  /* Frost effect */
+  .frost {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  /* Sticky columns for tracker */
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+  }
+}
