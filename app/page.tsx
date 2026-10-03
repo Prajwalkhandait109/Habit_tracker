@@ -11,7 +11,8 @@ import {
   Target, 
   TrendingUp,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { useHabits } from "@/lib/hooks/useHabits";
 import { useStats } from "@/lib/hooks/useStats";
@@ -22,10 +23,27 @@ import { HabitTracker } from "@/components/habit-tracker";
 import { HabitManager } from "@/components/habit-manager";
 import { Heatmap } from "@/components/heatmap";
 import { Button } from "@/components/ui/button";
+import { UsernameLogin } from "@/components/username-login";
+import { useLogout, useSession } from "@/lib/hooks/useSession";
 
 export default function WinterArcPage() {
+  const { data: user, isPending, isError } = useSession();
+
+  if (isPending) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-white/50">Loading profile...</div>;
+  }
+  if (isError) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-rose-300">Could not load profile. Refresh to try again.</div>;
+  }
+  if (!user) return <UsernameLogin />;
+
+  return <WinterArcDashboard username={user.username} />;
+}
+
+function WinterArcDashboard({ username }: { username: string }) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const logout = useLogout();
   
   const { data: habitsData, isLoading: habitsLoading } = useHabits(selectedYear);
   const { data: stats, isLoading: statsLoading } = useStats(selectedYear);
@@ -93,6 +111,18 @@ export default function WinterArcPage() {
             </div>
 
             <div className="flex items-center gap-4">
+              <span className="hidden text-sm text-white/60 sm:inline">{username}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Switch username"
+                aria-label="Switch username"
+                className="h-8 w-8 text-white/60 hover:bg-white/10 hover:text-white"
+                onClick={() => logout.mutate()}
+                disabled={logout.isPending}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
               {/* Year Navigator */}
               <div className="flex items-center gap-2 glass rounded-lg p-1">
                 <Button

@@ -1,5 +1,6 @@
 import { db } from "./index";
-import { habits } from "./schema";
+import { habits, users } from "./schema";
+import { eq } from "drizzle-orm";
 
 const defaultHabits = [
   { name: "Wake up early", color: "#fbbf24", icon: "sun", order: 0 },
@@ -16,10 +17,14 @@ const defaultHabits = [
 
 export async function seedHabits() {
   console.log("Seeding default habits...");
+
+  await db.insert(users).values({ username: "default" }).onConflictDoNothing();
+  const user = await db.query.users.findFirst({ where: eq(users.username, "default") });
+  if (!user) throw new Error("Could not find default user");
   
   for (const habit of defaultHabits) {
     try {
-      await db.insert(habits).values(habit).onConflictDoNothing();
+      await db.insert(habits).values({ ...habit, userId: user.id }).onConflictDoNothing();
     } catch (error) {
       console.error(`Failed to seed habit "${habit.name}":`, error);
     }

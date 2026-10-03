@@ -8,11 +8,15 @@ import {
   calculateWinterArcProgress,
   getWinterArcDates 
 } from "@/lib/utils";
+import { getRequestUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: "Choose a username first" }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
     
@@ -22,13 +26,18 @@ export async function GET(request: NextRequest) {
     
     // Get all active habits
     const allHabits = await db.query.habits.findMany({
-      where: eq(habits.isActive, true),
+      where: and(eq(habits.userId, user.id), eq(habits.isActive, true)),
     });
     
     // Get all progress for Winter Arc period
-    const allProgress = await db.query.dailyProgress.findMany({
-      where: eq(dailyProgress.completed, true),
-    });
+    const allProgress = await db
+      .select({ habitId: dailyProgress.habitId, date: dailyProgress.date })
+      .from(dailyProgress)
+      .innerJoin(habits, eq(dailyProgress.habitId, habits.id))
+      .where(and(
+        eq(habits.userId, user.id),
+        eq(dailyProgress.completed, true),
+      ));
     
     // Filter progress by date range
     const winterProgress = allProgress.filter(p => {

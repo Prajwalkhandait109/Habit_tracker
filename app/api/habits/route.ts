@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { habits, dailyProgress } from "@/db/schema";
-import { eq, asc, and } from "drizzle-orm";
+import { eq, asc, and, desc } from "drizzle-orm";
+import { getRequestUser } from "@/lib/auth";
 
 // GET /api/habits - Get all habits with their progress
 export async function GET(request: NextRequest) {
   try {
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: "Choose a username first" }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
     
     // Get all active habits
     const allHabits = await db.query.habits.findMany({
-      where: eq(habits.isActive, true),
+      where: and(eq(habits.userId, user.id), eq(habits.isActive, true)),
       orderBy: [asc(habits.order)],
     });
 
@@ -20,11 +24,14 @@ export async function GET(request: NextRequest) {
     const endDate = new Date(year + 1, 1, year % 4 === 0 ? 29 : 28); // Feb 28/29
 
     // Get all progress for this period
-    const progress = await db.query.dailyProgress.findMany({
-      where: and(
+    const progress = await db
+      .select({ habitId: dailyProgress.habitId, date: dailyProgress.date })
+      .from(dailyProgress)
+      .innerJoin(habits, eq(dailyProgress.habitId, habits.id))
+      .where(and(
+        eq(habits.userId, user.id),
         eq(dailyProgress.completed, true),
-      ),
-    });
+      ));
 
     // Organize progress by habit and date
     const progressMap = new Map();
@@ -53,6 +60,9 @@ export async function GET(request: NextRequest) {
 // POST /api/habits - Create a new habit
 export async function POST(request: NextRequest) {
   try {
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: "Choose a username first" }, { status: 401 });
+
     const body = await request.json();
     const { name, color, icon } = body;
 
@@ -60,7 +70,8 @@ export async function POST(request: NextRequest) {
     const maxOrder = await db
       .select({ maxOrder: habits.order })
       .from(habits)
-      .orderBy(habits.order)
+      .where(eq(habits.userId, user.id))
+      .orderBy(desc(habits.order))
       .limit(1);
 
     const newOrder = (maxOrder[0]?.maxOrder ?? -1) + 1;
@@ -68,6 +79,7 @@ export async function POST(request: NextRequest) {
     const newHabit = await db
       .insert(habits)
       .values({
+        userId: user.id,
         name,
         color: color || "#22d3ee",
         icon: icon || "circle",

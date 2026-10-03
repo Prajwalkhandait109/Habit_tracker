@@ -1,7 +1,16 @@
-import { pgTable, serial, varchar, integer, boolean, date, timestamp, text, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, integer, boolean, date, timestamp, text, index, uniqueIndex } from "drizzle-orm/pg-core";
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 32 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  usernameIdx: uniqueIndex("users_username_idx").on(table.username),
+}));
 
 export const habits = pgTable("habits", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   color: varchar("color", { length: 7 }).default("#22d3ee"),
   icon: varchar("icon", { length: 50 }).default("circle"),
@@ -11,6 +20,7 @@ export const habits = pgTable("habits", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
   orderIdx: index("habits_order_idx").on(table.order),
+  userOrderIdx: index("habits_user_order_idx").on(table.userId, table.order),
   activeIdx: index("habits_active_idx").on(table.isActive),
 }));
 

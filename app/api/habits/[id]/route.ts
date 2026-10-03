@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { habits, dailyProgress } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getRequestUser } from "@/lib/auth";
 
 // PATCH /api/habits/[id] - Update a habit
 export async function PATCH(
@@ -9,6 +10,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: "Choose a username first" }, { status: 401 });
+
     const id = parseInt(params.id);
     const body = await request.json();
     const { name, color, icon, order, isActive } = body;
@@ -23,7 +27,7 @@ export async function PATCH(
         ...(isActive !== undefined && { isActive }),
         updatedAt: new Date(),
       })
-      .where(eq(habits.id, id))
+      .where(and(eq(habits.id, id), eq(habits.userId, user.id)))
       .returning();
 
     if (updatedHabit.length === 0) {
@@ -49,16 +53,24 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: "Choose a username first" }, { status: 401 });
+
     const id = parseInt(params.id);
 
     // Soft delete by setting isActive to false
-    await db
+    const deleted = await db
       .update(habits)
       .set({
         isActive: false,
         updatedAt: new Date(),
       })
-      .where(eq(habits.id, id));
+      .where(and(eq(habits.id, id), eq(habits.userId, user.id)))
+      .returning({ id: habits.id });
+
+    if (deleted.length === 0) {
+      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
